@@ -1,12 +1,21 @@
+from datetime import datetime, time
+
 import telebot
 import webbrowser
 from telebot import types
 import sqlite3
+import requests
+import json
+
 
 # Подключение к боту
 bot = telebot.TeleBot('7111234144:AAEM82iAmq7uJGruhIUL64NsEdFUvmhmjho')
 name = ''
-
+API = "9fbad35bd5b70d3238c5f55b332ef163"
+geonames_url = 'http://download.geonames.org/export/dump/'
+basename = 'cities15000'
+filename = basename + '.zip'
+time_sp = {"санкт-петербург": 0, "владивосток": 10}
 
 # Создание таблцы бд
 @bot.message_handler(commands=['start'])
@@ -70,6 +79,47 @@ def callback(call):
         conn.close()
 
         bot.send_message(call.message.chat.id, info)
+
+
+# Погода
+@bot.message_handler(commands=["weather"])
+def weather(message):
+    bot.send_message(message.chat.id, "Hi, write your city")
+
+
+# Обработка погоды в городе
+@bot.message_handler(content_types=["text"])
+def get_weather(message):
+    city = message.text.strip().lower()
+    weath = requests.get(f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API}&units=metric')
+    if weath.status_code == 200:
+        data = json.loads(weath.text)
+        bot.reply_to(message, f'Now temperature: {data["main"]["temp"]}°C')
+        t = datetime.now()
+        hour = t.hour
+        min = t.min
+        for key in time_sp:
+            if key == city:
+                print(key)
+                hour += time_sp[key]
+        if hour > 24:
+            hour -= 24
+        image = ['ras.jpg', 'den.jpg', 'zac.jpg', 'noc.jpg']
+        if 5 <= hour <= 12:
+            print(1)
+            file = open('./' + image[0], "rb")
+        elif 12 < hour <= 18:
+            print(2)
+            file = open('./' + image[1], "rb")
+        elif 18 < hour <= 20:
+            print(3)
+            file = open('./' + image[2], "rb")
+        else:
+            print(4)
+            file = open('./' + image[3], "rb")
+        bot.send_photo(message.chat.id, file)
+    else:
+        bot.reply_to(message, f'Bad city')
 
 
 # Обработка фотографии
