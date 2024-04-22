@@ -6,7 +6,7 @@ from telebot import types
 import sqlite3
 import requests
 import json
-
+from currency_converter import CurrencyConverter
 
 # Подключение к боту
 bot = telebot.TeleBot('7111234144:AAEM82iAmq7uJGruhIUL64NsEdFUvmhmjho')
@@ -16,6 +16,9 @@ geonames_url = 'http://download.geonames.org/export/dump/'
 basename = 'cities15000'
 filename = basename + '.zip'
 time_sp = {"санкт-петербург": 0, "владивосток": 10}
+currency = CurrencyConverter()
+amount = 0
+
 
 # Создание таблцы бд
 @bot.message_handler(commands=['start'])
@@ -60,25 +63,88 @@ def user_pass(message):
 # Вызов данных бд таблицы (Имени и пароля), Осуществление удаления фотографии и замены текста
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
-    if call.data == "delete":
-        bot.delete_message(call.message.chat.id, call.message.message_id - 1)
-    elif call.data == "edit":
-        bot.edit_message_text('Not cat', call.message.chat.id, call.message.message_id)
+    try:
+        values = call.data.split('/')
+        try:
+            res = currency.convert(amount, values[0], values[1])
+            bot.send_message(call.message.chat.id, f"Have a look: {round(res, 3)}. You can re-enter the amount")
+            bot.register_next_step_handler(call.message, summa)
+        except IndexError:
+            if call.data == "edit":
+                bot.edit_message_text('Not cat', call.message.chat.id, call.message.message_id)
+            elif call.data == "delete":
+                bot.delete_message(call.message.chat.id, call.message.message_id - 1)
+            elif call.data == "stop":
+                bot.send_message(call.message.chat.id, f'Stop reade')
+                bot.register_next_step_handler(start)
+            elif call.data == 'else':
+                bot.send_message(call.message.chat.id, f'Enter 2 words with "/"')
+                bot.register_callback_query_handler(call.message, my_currency)
+            else:
+                conn = sqlite3.connect('botbd.sql')
+                cur = conn.cursor()
+
+                cur.execute('SELECT * FROM users')
+                users = cur.fetchall()
+
+                info = ""
+                for i in users:
+                    info += f"Name: {i[1]}, password: {i[2]}\n"
+
+                cur.close()
+                conn.close()
+
+                bot.send_message(call.message.chat.id, info)
+    except AttributeError:
+        if call.data == "edit":
+            bot.edit_message_text('Not cat', call.message.chat.id, call.message.message_id)
+        elif call.data == "delete":
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        elif call.data == "stop":
+            bot.send_message(call.message.chat.id, f'Stop reade')
+        elif call.data == 'else':
+            bot.send_message(call.message.chat.id, f'Enter 2 words with "/"')
+            bot.register_callback_query_handler(call.message, my_currency)
+
+
+@bot.message_handler(commands=['money'])
+def money(message):
+    bot.send_message(message.chat.id, "Hi, enter the amount")
+    bot.register_next_step_handler(message, summa)
+
+
+def summa(message):
+    global amount
+    try:
+        amount = int(message.text.strip())
+    except ValueError:
+        bot.send_message(message.chat.id, "Error, not money. Enter the amount")
+        bot.register_next_step_handler(message, summa)
+        return
+
+    if amount > 0:
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        btn1 = types.InlineKeyboardButton("USD/EUR", callback_data='USD/EUR')
+        btn2 = types.InlineKeyboardButton("EUR/USD", callback_data='EUR/USD')
+        btn3 = types.InlineKeyboardButton("USD/GBP", callback_data='USD/GBP')
+        btn4 = types.InlineKeyboardButton("Other", callback_data='else')
+        btn5 = types.InlineKeyboardButton("Stop", callback_data='stop')
+        markup.add(btn1, btn2, btn3, btn4, btn5)
+        bot.send_message(message.chat.id, "Choose money", reply_markup=markup)
     else:
-        conn = sqlite3.connect('botbd.sql')
-        cur = conn.cursor()
+        bot.send_message(message.chat.id, "Error, money <= 0. Enter the amount")
+        bot.register_next_step_handler(message, summa)
 
-        cur.execute('SELECT * FROM users')
-        users = cur.fetchall()
 
-        info = ""
-        for i in users:
-            info += f"Name: {i[1]}, password: {i[2]}\n"
-
-        cur.close()
-        conn.close()
-
-        bot.send_message(call.message.chat.id, info)
+def my_currency(message):
+    try:
+        values = message.text.upper().split('/')
+        res = currency.convert(amount, values[0], values[1])
+        bot.send_message(message.chat.id, f"Have a look: {round(res, 3)}. You can re-enter the amount")
+        bot.register_next_step_handler(message, summa)
+    except Exception:
+        bot.send_message(message.chat.id, f"Error. You need re-enter value")
+        bot.register_next_step_handler(message, my_currency)
 
 
 # Погода
@@ -119,7 +185,11 @@ def get_weather(message):
             file = open('./' + image[3], "rb")
         bot.send_photo(message.chat.id, file)
     else:
-        bot.reply_to(message, f'Bad city')
+        try:
+            city = message.text.upper().split('/')
+            bot.register_next_step_handler(message, my_currency)
+        except Exception:
+            bot.reply_to(message, f'Bad city')
 
 
 # Обработка фотографии
