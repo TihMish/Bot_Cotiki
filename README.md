@@ -39,3 +39,19 @@ def my_currency(message):
 
 # Обработка фотографии
 @bot.message_handler(content_types=['photo'])
+
+# Привязка сайта с другого рипозитория 
+В файле <>.html и <>.py
+
+# В большинстве используется:
+bot.send_message()
+bot.register_next_step_handler()
+message.text.strip()
+types.InlineKeyboardMarkup()
+types.InlineKeyboardButton()
+webbrowser.open()
+bot.send_photo()
+bot.register_callback_query_handler()
+bot.edit_message_text()
+bot.delete_message()
+bot.reply_to()
