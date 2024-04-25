@@ -41,7 +41,7 @@ def my_currency(message):
 @bot.message_handler(content_types=['photo'])
 
 # Привязка сайта с другого рипозитория 
-В файле <>.html и <>.py
+В файле site.html и veb.py
 
 # В большинстве используется:
 bot.send_message()
