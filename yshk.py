@@ -149,10 +149,44 @@ def my_currency(message):
         bot.register_next_step_handler(message, my_currency)
 
 
+# Обработка фотографии
+@bot.message_handler(content_types=['photo'])
+def get_photo(message):
+    markup = types.InlineKeyboardMarkup()
+    btn1 = types.InlineKeyboardButton('Go to site', url="https://tihmish.github.io/pr/site.html")
+    btn2 = types.InlineKeyboardButton('Delete photo', callback_data="delete")
+    btn3 = types.InlineKeyboardButton('Edit', callback_data="edit")
+    markup.row(btn1)
+    markup.row(btn2, btn3)
+    bot.reply_to(message, 'So beautiful cat!', reply_markup=markup)
+
+
 # Погода
 @bot.message_handler(commands=["weather"])
 def weather(message):
     bot.send_message(message.chat.id, "Hi, write your city")
+
+
+# Переход в ЛМС с проектом
+@bot.message_handler(commands=['site', 'website'])
+def site(message):
+    webbrowser.open('https://lms.yandex.ru/courses/1054/groups/8709/lessons/5979')
+
+
+# Кнопочки для дальнейшей разработки
+def on_click(message):
+    if message.text == "Go to site":
+        bot.send_message(message.chat.id, "Web is open")
+    elif message.text == "Delete photo":
+        bot.send_message(message.chat.id, "Del")
+    elif message.text == "Edit":
+        bot.send_message(message.chat.id, "Edit")
+
+
+# Помощь и отзывы
+@bot.message_handler(commands=['help'])
+def main(message):
+    bot.send_message(message.chat.id, '<b>Help</b> <em><u>information</u></em>', parse_mode='html')
 
 
 # Обработка погоды в городе
@@ -194,30 +228,6 @@ def get_weather(message):
             bot.reply_to(message, f'Bad city')
 
 
-# Обработка фотографии
-@bot.message_handler(content_types=['photo'])
-def get_photo(message):
-    markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton('Go to site', url="https://google.com")
-    btn2 = types.InlineKeyboardButton('Delete photo', callback_data="delete")
-    btn3 = types.InlineKeyboardButton('Edit', callback_data="edit")
-    markup.row(btn1)
-    markup.row(btn2, btn3)
-    bot.reply_to(message, 'So beautiful cat!', reply_markup=markup)
-
-
-# Переход в ЛМС с проектом
-@bot.message_handler(commands=['site', 'website'])
-def site(message):
-    webbrowser.open('https://lms.yandex.ru/courses/1054/groups/8709/lessons/5979')
-
-
-# Помощь и отзывы
-@bot.message_handler(commands=['help'])
-def main(message):
-    bot.send_message(message.chat.id, '<b>Help</b> <em><u>information</u></em>', parse_mode='html')
-
-
 # Приветствие и получение id
 @bot.message_handler()
 def info(message):
@@ -239,16 +249,6 @@ def info(message):
     elif message.text.lower() == "id":
         print(message.from_user.id)
         bot.reply_to(message, f'ID: {message.from_user.id}')
-
-
-# Кнопочки для дальнейшей разработки
-def on_click(message):
-    if message.text == "Go to site":
-        bot.send_message(message.chat.id, "Web is open")
-    elif message.text == "Delete photo":
-        bot.send_message(message.chat.id, "Del")
-    elif message.text == "Edit":
-        bot.send_message(message.chat.id, "Edit")
 
 
 bot.infinity_polling()
