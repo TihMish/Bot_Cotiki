@@ -85,4 +85,4 @@ virtualenv==20.24.6
 wcwidth==0.2.13
 webencodings==0.5.1
 yarg==0.1.9
-pip install aiogram==2.25.1
+aiogram==2.25.1
